@@ -1,14 +1,32 @@
 package main
 
-import "time"
+import (
+  "encoding/base64"
+  "encoding/json"
+  "golang.org/x/oauth2"
+  "github.com/google/go-github/github"
+  "gopkg.in/gcfg.v1"
+)
 
 var nugetPackages NuGetPackages
 
-// seed data
 func init() {
-  if published, error := time.Parse(time.RFC3339, "2014-04-24T01:03:53Z"); error == nil {
-    RepoCreateNuGetPackage(NuGetPackage{Url: "http://nugetdev1.blob.core.windows.net/package-metadata/packages/nuget.server/2.7.2.json", Id: "NuGet.Server", Version: "2.7.2", Published: published})
-    RepoCreateNuGetPackage(NuGetPackage{Url: "http://nugetdev1.blob.core.windows.net/package-metadata/packages/nuget.server/2.7.1.json", Id: "NuGet.Server", Version: "2.7.1", Published: published})
+  var cfg Config
+  if error := gcfg.ReadFileInto(&cfg, ".config"); error != nil {
+    panic(error)
+  }
+  //todo:refactor github functionality to provider class/interface
+  token := oauth2.StaticTokenSource (&oauth2.Token { AccessToken: cfg.GitHub.Token })
+  oauthClient := oauth2.NewClient(oauth2.NoContext, token)
+  githubClient := github.NewClient(oauthClient)
+  masterRepositoryContentGetOptions := &github.RepositoryContentGetOptions { Ref: "master" }
+  if fileContent, _, response, error := githubClient.Repositories.GetContents(cfg.GitHub.Owner, cfg.GitHub.Repo, "nuget/packages.json", masterRepositoryContentGetOptions); error == nil {
+    if response.StatusCode == 200 {
+      b, _ := base64.StdEncoding.DecodeString(*fileContent.Content)
+      if error := json.Unmarshal(b, &nugetPackages); error != nil {
+        panic(error)
+      }
+    }
   } else {
     panic(error)
   }
@@ -20,7 +38,6 @@ func RepoFindNuGetPackage(id string, version string) NuGetPackage {
       return item
     }
   }
-  // empty, if not found
   return NuGetPackage{}
 }
 

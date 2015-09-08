@@ -1,0 +1,5 @@
+; set your token and remove '-dist' from filename
+[github]
+token = oauth-token-goes-here
+owner = MozRelOps
+repo = hoard-prod
