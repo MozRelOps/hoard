@@ -32,6 +32,16 @@ func init() {
   }
 }
 
+func RepoFindNuGetPackages(id string) NuGetPackages {
+  filtered := make(NuGetPackages, 0)
+  for _, p := range nugetPackages {
+    if id == p.Id {
+      filtered = append(filtered, p)
+    }
+  }
+  return filtered
+}
+
 func RepoFindNuGetPackage(id string, version string) NuGetPackage {
   for _, item := range nugetPackages {
     if item.Id == id && item.Version == version {

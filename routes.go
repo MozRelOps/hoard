@@ -33,6 +33,12 @@ var routes = Routes{
   Route{
     "NuGetPackageShow",
     "GET",
+    "/nugetpackages/{nugetPackageId}",
+    NuGetPackageShow,
+  },
+  Route{
+    "NuGetPackageShow",
+    "GET",
     "/nugetpackages/{nugetPackageId}/{nugetPackageVersion}",
     NuGetPackageShow,
   },

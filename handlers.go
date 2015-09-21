@@ -24,6 +24,18 @@ func NuGetPackageIndex(w http.ResponseWriter, r *http.Request) {
 func NuGetPackageShow(w http.ResponseWriter, r *http.Request) {
   vars := mux.Vars(r)
   nugetPackageId, nugetPackageVersion := vars["nugetPackageId"], vars["nugetPackageVersion"]
+
+  if nugetPackageVersion == "" {
+    nugetPackages := RepoFindNuGetPackages(nugetPackageId)
+    if len(nugetPackages) > 0 {
+      w.Header().Set("Content-Type", "application/json; charset=UTF-8")
+      w.WriteHeader(http.StatusOK)
+      if err := json.NewEncoder(w).Encode(nugetPackages); err != nil {
+        panic(err)
+      }
+      return
+    }
+  }
   
   nugetPackage := RepoFindNuGetPackage(nugetPackageId, nugetPackageVersion)
   if nugetPackage.Id == nugetPackageId && nugetPackage.Version == nugetPackageVersion {
