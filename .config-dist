@@ -1,5 +1,14 @@
-; set your token and remove '-dist' from filename
+; set your github oauth token, your server port and remove '-dist' from filename
 [github]
 token = oauth-token-goes-here
 owner = MozRelOps
 repo = hoard-prod
+
+[repositories]
+nuget = /data/repos/nuget/nupkg
+chocolatey = /data/repos/chocolatey/nupkg
+oneget = /data/repos/oneget/nupkg
+symbolsource = /data/repos/symbolsource/nupkg
+
+[server]
+port = 8080

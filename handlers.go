@@ -4,8 +4,10 @@ import (
   "encoding/json"
   "fmt"
   "io"
-  "io/ioutil"
   "net/http"
+  "os"
+  "path"
+  "time"
   "github.com/gorilla/mux"
 )
 
@@ -58,29 +60,42 @@ func NuGetPackageShow(w http.ResponseWriter, r *http.Request) {
 
 /*
 Test with this curl command:
-curl -H "Content-Type: application/json" -d '{"name":"New Todo"}' http://localhost:8080/nugetPackages
+curl -i --form id=test --form version=0.0.1 --form "fileupload=@/data/repos/nuget/nupkg/nxlog.2.5.1089.nupkg;filename=test.0.0.1.nupkg" http://localhost:8080/nugetpackages
 */
 func NuGetPackageCreate(w http.ResponseWriter, r *http.Request) {
-  var nugetPackage NuGetPackage
-  body, err := ioutil.ReadAll(io.LimitReader(r.Body, 1048576))
-  if err != nil {
-    panic(err)
-  }
-  if err := r.Body.Close(); err != nil {
-    panic(err)
-  }
-  if err := json.Unmarshal(body, &nugetPackage); err != nil {
-    w.Header().Set("Content-Type", "application/json; charset=UTF-8")
-    w.WriteHeader(422) // unprocessable entity
-    if err := json.NewEncoder(w).Encode(err); err != nil {
+  if r.Method == "POST" || r.Method == "PUT" {
+    if err := r.ParseMultipartForm(100000); err != nil {
       panic(err)
     }
+    m := r.MultipartForm
+    for _, files := range m.File {
+      for i, _ := range files {
+        file, err := files[i].Open()
+        defer file.Close()
+        if err != nil {
+          http.Error(w, err.Error(), http.StatusInternalServerError)
+          return
+        }
+        var push = Push{Id: r.FormValue("id"), Version: r.FormValue("version")}
+        dst, err := os.Create(path.Join(cfg.Repositories.NuGet, push.Id + "." + push.Version + ".nupkg"))
+        defer dst.Close()
+        if err != nil {
+          http.Error(w, err.Error(), http.StatusInternalServerError)
+          return
+        }
+        if _, err := io.Copy(dst, file); err != nil {
+          http.Error(w, err.Error(), http.StatusInternalServerError)
+          return
+        }
+        RepoCreateNuGetPackage(NuGetPackage{Url: r.URL.Scheme + r.URL.Host + "/nugetpackages/" + push.Id + "/" + push.Version, Id: push.Id, Version: push.Version, Published: time.Now()})
+      }
+    }
+  } else {
+    w.WriteHeader(http.StatusMethodNotAllowed)
   }
+}
 
-  t := RepoCreateNuGetPackage(nugetPackage)
-  w.Header().Set("Content-Type", "application/json; charset=UTF-8")
-  w.WriteHeader(http.StatusCreated)
-  if err := json.NewEncoder(w).Encode(t); err != nil {
-    panic(err)
-  }
+type Push struct {
+  Id string `json:"id"`
+  Version string `json:"version"`
 }

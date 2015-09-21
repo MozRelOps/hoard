@@ -8,10 +8,10 @@ import (
   "gopkg.in/gcfg.v1"
 )
 
+var cfg Config
 var nugetPackages NuGetPackages
 
 func init() {
-  var cfg Config
   if error := gcfg.ReadFileInto(&cfg, ".config"); error != nil {
     panic(error)
   }
@@ -51,7 +51,6 @@ func RepoFindNuGetPackage(id string, version string) NuGetPackage {
   return NuGetPackage{}
 }
 
-func RepoCreateNuGetPackage(item NuGetPackage) NuGetPackage {
+func RepoCreateNuGetPackage(item NuGetPackage) {
   nugetPackages = append(nugetPackages, item)
-  return item
 }
